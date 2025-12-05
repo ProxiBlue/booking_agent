@@ -1,3 +1,7 @@
-check process nginx with pidfile /var/run/nginx.pid
-    start program = "/etc/init.d/nginx start"
-    stop program = "/etc/init.d/nginx stop"
+check process nginx
+    with pidfile /var/run/nginx.pid
+    start program = "/bin/systemctl start nginx.service"
+    stop program = "/bin/systemctl stop nginx.service"
+
+    # Restart if process doesn't exist
+    if does not exist then restart

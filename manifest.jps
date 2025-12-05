@@ -17,7 +17,6 @@ description:
 globals:
   webroot: /var/www/webroot/ROOT
   NGINX_PASS: ${fn.password(10)}
-  STATS_PASS: ${fn.password(10)}
   MONIT_PASS: ${fn.password(10)}
   PHP_VERSION: 1.28.0-php-8.4.7-almalinux-9
 
@@ -42,6 +41,7 @@ onInstall:
     - SetupAccess
     - config
     - install
+    - setupFirewall
     - restartNodes:
         - nodeGroup: [cp]
 
@@ -69,8 +69,8 @@ actions:
       sayYes: true
     install:
       cmd[cp]:
-        - htpasswd -b -c /etc/nginx/.htpasswd stats ${globals.STATS_PASS}
-        - chown nginx:nginx /etc/nginx/.htpasswd
+        - touch /var/log/run.log
+        - chmod 777 /var/log/run.log
         - sed -i -e "/use address localhost/d" /etc/monitrc
         - sed -i -e "/allow localhost/d" /etc/monitrc
         - sed -i -e "s/allow admin:monit/allow admin:${globals.MONIT_PASS}/g" /etc/monitrc
@@ -99,6 +99,30 @@ actions:
         - monit reload &>> /var/log/run.log
       user: root
       sayYes: true
+    setupFirewall:
+      - api: env.security.AddRule
+        rules:
+          - direction: INPUT
+            name: Monit Access
+            protocol: TCP
+            ports: 2812
+            src: 180.150.92.24/32
+            priority: 1100
+            action: ALLOW
+          - direction: INPUT
+            name: Block FTP
+            protocol: TCP
+            ports: 20,21
+            src: 0.0.0.0/0
+            priority: 1200
+            action: DENY
+          - direction: INPUT
+            name: Block SMTP
+            protocol: TCP
+            ports: 25
+            src: 0.0.0.0/0
+            priority: 1200
+            action: DENY
 success:
   text: |
 
