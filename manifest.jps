@@ -1,0 +1,68 @@
+version: '1.4.2'
+appVersion: latest
+type: install
+id: pb_booking_agent
+name: BookingAgent
+baseUrl: https://raw.githubusercontent.com/jelastic-jps/laravel/master
+logo: /images/logo-transparent.png
+homepage: http://www.proxiblue.com.au/
+
+categories:
+- apps/dev-and-admin-tools
+
+description:
+  text: /texts/description.md
+  short: Open-source PHP web framework for rapid development
+
+globals:
+  webroot: /var/www/webroot/ROOT
+  NGINX_PASS: ${fn.password(10)}
+  STATS_PASS: ${fn.password(10)}
+  MONIT_PASS: ${fn.password(10)}
+  NODE_VERSION: 1.28.0-php-8.4.7-almalinux-9
+
+ssl: true
+skipNodeEmails: true
+
+nodes:
+- cloudlets: 16
+  nodeType: nginxphp-dockerized
+  tag: ${settings.NODE_VERSION}
+  extip: 1
+  nodeGroup: cp
+  volumes:
+      - /var/www/webroot/ROOT
+  displayName: AppServer
+  env:
+    PHPFPM_MAX_CHILDREN: 1000
+    REDIS_ENABLED: 1
+    REDIS_VERSION: 6.0.6
+
+onInstall:
+    - SetupAccess
+    - config
+    - install
+    - restartNodes:
+        - nodeGroup: [cp]
+
+actions:
+    SetupAccess:
+      - log: Set Access
+      - cmd [cp]: |-
+          echo ${globals.NGINX_PASS}| passwd --stdin nginx &>> /var/log/run.log
+          echo ${globals.NGINX_PASS}| passwd --stdin root &>> /var/log/run.log
+        user: root
+        sayYes: true
+    config:
+      cmd[cp]: |-
+        curl -sS https://getcomposer.org/installer | php
+        mv composer.phar /usr/bin/composer
+        chmod +x /usr/bin/composer
+        cd ${globals.webroot}
+      user: root
+    install:
+      cmd[cp]:
+        - export REDIS_ENABLED=TRUE
+        - curl https://raw.githubusercontent.com/ProxiBlue/HostingEnvironment/main/configs/redis/redis.conf > /etc/redis.conf
+
+success: /texts/success.md
