@@ -19,7 +19,7 @@ globals:
   NGINX_PASS: ${fn.password(10)}
   STATS_PASS: ${fn.password(10)}
   MONIT_PASS: ${fn.password(10)}
-  NODE_VERSION: 1.28.0-php-8.4.7-almalinux-9
+  PHP_VERSION: 1.28.0-php-8.4.7-almalinux-9
 
 ssl: true
 skipNodeEmails: true
@@ -27,7 +27,7 @@ skipNodeEmails: true
 nodes:
 - cloudlets: 16
   nodeType: nginxphp-dockerized
-  tag: ${settings.NODE_VERSION}
+  tag: ${globals.PHP_VERSION}
   extip: 1
   nodeGroup: cp
   volumes:
@@ -51,16 +51,19 @@ actions:
       - cmd [cp]: |-
           echo ${globals.NGINX_PASS}| passwd --stdin nginx &>> /var/log/run.log
           echo ${globals.NGINX_PASS}| passwd --stdin root &>> /var/log/run.log
+          usermod -aG wheel nginx &>> /var/log/run.log
+          echo "nginx ALL=(ALL) ALL" > /etc/sudoers.d/nginx
+          chmod 0440 /etc/sudoers.d/nginx
         user: root
         sayYes: true
     config:
       cmd[cp]: |-
-        curl -sS https://getcomposer.org/installer | php
+        curl -fsSL https://getcomposer.org/installer | php
         mv composer.phar /usr/bin/composer
         chmod +x /usr/bin/composer
         cd ${globals.webroot}
-        yum install epel-release &>> /var/log/run.log
-        yum update
+        yum install -y epel-release &>> /var/log/run.log
+        yum update -y &>> /var/log/run.log
         yum install -y joe pv monit libsodium httpd-tools &>> /var/log/run.log
       user: root
       sayYes: true
@@ -72,28 +75,44 @@ actions:
         - sed -i -e "/allow localhost/d" /etc/monitrc
         - sed -i -e "s/allow admin:monit/allow admin:${globals.MONIT_PASS}/g" /etc/monitrc
         - export REDIS_ENABLED=TRUE
-        - curl etc/redis.conf > /etc/redis.conf
+        - curl -fsSL https://raw.githubusercontent.com/ProxiBlue/HostingEnvironment/main/etc/redis.conf -o /etc/redis.conf
         - systemctl start redis &>> /var/log/run.log
         - systemctl enable redis &>> /var/log/run.log
         - systemctl restart nginx &>> /var/log/run.log
         - jem service restart  &>> /var/log/run.log
         - mkdir -p /etc/monit.d/
-        - curl https://raw.githubusercontent.com/ProxiBlue/HostingEnvironment/main/etc/monit/nginx > /etc/monit.d/nginx
-        - curl https://raw.githubusercontent.com/ProxiBlue/HostingEnvironment/main/etc/monit/nginx > /etc/monit.d/nginx
-        - curl https://raw.githubusercontent.com/ProxiBlue/HostingEnvironment/main/etc/monit/booking_agent > /etc/monit.d/booking_agent
-        - curl https://raw.githubusercontent.com/ProxiBlue/HostingEnvironment/main/etc/php.d/assert_off.ini > /etc/php.d/assert_off.ini
-        - curl https://raw.githubusercontent.com/ProxiBlue/HostingEnvironment/main/etc/php.d/custom_io.ini > /etc/php.d/custom_io.ini
-        - curl https://raw.githubusercontent.com/ProxiBlue/HostingEnvironment/main/etc/php.d/error_level.ini > /etc/php.d/error_level.ini
-        - curl https://raw.githubusercontent.com/ProxiBlue/HostingEnvironment/main/etc/php.d/assert_off.ini > /etc/php.d/assert_off.ini
-        - curl https://raw.githubusercontent.com/ProxiBlue/HostingEnvironment/main/etc/php-fpm.conf > /etc/php-fpm.conf
-        - curl https://raw.githubusercontent.com/ProxiBlue/HostingEnvironment/main/configs/nginx/CORS-CDN/cors.conf > /etc/nginx/conf.d/CORS/cors.conf
-        - curl https://raw.githubusercontent.com/ProxiBlue/HostingEnvironment/main/configs/nginx/stub_status.conf > /etc/nginx/conf.d/stub_status.conf
-        - curl https://raw.githubusercontent.com/ProxiBlue/HostingEnvironment/main/etc/systemd/system/redis.service.d/restart.conf > /etc/systemd/system/redis.service.d/restart.conf
+        - curl -fsSL https://raw.githubusercontent.com/ProxiBlue/HostingEnvironment/main/etc/monit/nginx -o /etc/monit.d/nginx
+        - curl -fsSL https://raw.githubusercontent.com/ProxiBlue/HostingEnvironment/main/etc/monit/booking_queue -o /etc/monit.d/booking_queue
+        - curl -fsSL https://raw.githubusercontent.com/ProxiBlue/HostingEnvironment/main/etc/php.d/assert_off.ini -o /etc/php.d/assert_off.ini
+        - curl -fsSL https://raw.githubusercontent.com/ProxiBlue/HostingEnvironment/main/etc/php.d/custom_io.ini -o /etc/php.d/custom_io.ini
+        - curl -fsSL https://raw.githubusercontent.com/ProxiBlue/HostingEnvironment/main/etc/php.d/error_level.ini -o /etc/php.d/error_level.ini
+        - curl -fsSL https://raw.githubusercontent.com/ProxiBlue/HostingEnvironment/main/etc/php-fpm.conf -o /etc/php-fpm.conf
+        - mkdir -p /etc/nginx/conf.d/CORS/
+        - curl -fsSL https://raw.githubusercontent.com/ProxiBlue/HostingEnvironment/main/configs/nginx/CORS-CDN/cors.conf -o /etc/nginx/conf.d/CORS/cors.conf
+        - curl -fsSL https://raw.githubusercontent.com/ProxiBlue/HostingEnvironment/main/configs/nginx/stub_status.conf -o /etc/nginx/conf.d/stub_status.conf
+        - mkdir -p /etc/systemd/system/redis.service.d/
+        - curl -fsSL https://raw.githubusercontent.com/ProxiBlue/HostingEnvironment/main/etc/systemd/system/redis.service.d/restart.conf -o /etc/systemd/system/redis.service.d/restart.conf
+        - systemctl daemon-reload &>> /var/log/run.log
         - systemctl enable monit &>> /var/log/run.log
         - systemctl start monit &>> /var/log/run.log
-        - systemctl daemon-reload &>> /var/log/run.log
-        - curl https://raw.githubusercontent.com/ProxiBlue/HostingEnvironment/main//usr/local/bin/check-redis-queue.sh > /usr/local/bin/check-redis-queue.sh
+        - curl -fsSL https://raw.githubusercontent.com/ProxiBlue/HostingEnvironment/main/usr/local/bin/check-redis-queue.sh -o /usr/local/bin/check-redis-queue.sh
         - chmod +x /usr/local/bin/check-redis-queue.sh
       user: root
       sayYes: true
-success: /texts/success.md
+success:
+  text: |
+
+    ## Redis for Cache
+
+    * **Host**: ${nodes.cp.first.intIP} or just use: localhost on AppServer
+    * **socket**: It is preferred to use the socket /tmp/redis.sock
+
+    ## AppServer Node / DB Node
+
+    * **password**: ${globals.NGINX_PASS}
+
+    ## MONIT on port 2812
+
+        * admin / ${globals.MONIT_PASS}
+
+    * queue worker is managed by monit and runs as a cron

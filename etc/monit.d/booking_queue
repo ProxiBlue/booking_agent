@@ -1,13 +1,21 @@
 # /etc/monit/conf.d/ai-assistant-worker
+#
+# Direct Monit management of worker process (no systemd required)
 
 ###############################################################################
 # Message Queue Worker Process Monitoring
 ###############################################################################
 
-check process ai-assistant-worker
+check process booking_queue
     matching "worker.php"
-    start program = "/bin/systemctl start message-queue-worker"
-    stop program = "/bin/systemctl stop message-queue-worker"
+
+    # Direct PHP execution (no systemd)
+    start program = "/usr/bin/php /var/www/webroot/ROOT/worker.php"
+        as uid "www-data" gid "www-data"
+        with timeout 60 seconds
+
+    stop program = "/usr/bin/pkill -f 'php.*worker.php'"
+        with timeout 30 seconds
 
     # Restart if process doesn't exist
     if does not exist then restart
@@ -35,8 +43,10 @@ check process ai-assistant-worker
 
 check process redis-server
     with pidfile /var/run/redis/redis-server.pid
-    start program = "/bin/systemctl start redis-server"
-    stop program = "/bin/systemctl stop redis-server"
+    start program = "/usr/bin/redis-server /etc/redis/redis.conf"
+        with timeout 60 seconds
+    stop program = "/usr/bin/redis-cli shutdown"
+        with timeout 30 seconds
 
     # Restart if process doesn't exist
     if does not exist then restart
