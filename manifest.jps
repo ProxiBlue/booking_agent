@@ -75,27 +75,24 @@ actions:
         - sed -i -e "/allow localhost/d" /etc/monitrc
         - sed -i -e "s/allow admin:monit/allow admin:${globals.MONIT_PASS}/g" /etc/monitrc
         - export REDIS_ENABLED=TRUE
-        - curl -fsSL https://raw.githubusercontent.com/ProxiBlue/HostingEnvironment/main/etc/redis.conf -o /etc/redis.conf
+        - curl -fsSL https://raw.githubusercontent.com/ProxiBlue/booking_agent/main/etc/redis.conf -o /etc/redis.conf
         - systemctl start redis &>> /var/log/run.log
         - systemctl enable redis &>> /var/log/run.log
         - systemctl restart nginx &>> /var/log/run.log
         - jem service restart  &>> /var/log/run.log
         - mkdir -p /etc/monit.d/
-        - curl -fsSL https://raw.githubusercontent.com/ProxiBlue/HostingEnvironment/main/etc/monit/nginx -o /etc/monit.d/nginx
-        - curl -fsSL https://raw.githubusercontent.com/ProxiBlue/HostingEnvironment/main/etc/monit/booking_queue -o /etc/monit.d/booking_queue
-        - curl -fsSL https://raw.githubusercontent.com/ProxiBlue/HostingEnvironment/main/etc/php.d/assert_off.ini -o /etc/php.d/assert_off.ini
-        - curl -fsSL https://raw.githubusercontent.com/ProxiBlue/HostingEnvironment/main/etc/php.d/custom_io.ini -o /etc/php.d/custom_io.ini
-        - curl -fsSL https://raw.githubusercontent.com/ProxiBlue/HostingEnvironment/main/etc/php.d/error_level.ini -o /etc/php.d/error_level.ini
-        - curl -fsSL https://raw.githubusercontent.com/ProxiBlue/HostingEnvironment/main/etc/php-fpm.conf -o /etc/php-fpm.conf
-        - mkdir -p /etc/nginx/conf.d/CORS/
-        - curl -fsSL https://raw.githubusercontent.com/ProxiBlue/HostingEnvironment/main/configs/nginx/CORS-CDN/cors.conf -o /etc/nginx/conf.d/CORS/cors.conf
-        - curl -fsSL https://raw.githubusercontent.com/ProxiBlue/HostingEnvironment/main/configs/nginx/stub_status.conf -o /etc/nginx/conf.d/stub_status.conf
+        - curl -fsSL https://raw.githubusercontent.com/ProxiBlue/booking_agent/main/etc/monit/nginx -o /etc/monit.d/nginx
+        - curl -fsSL https://raw.githubusercontent.com/ProxiBlue/booking_agent/main/etc/monit/booking_queue -o /etc/monit.d/booking_queue
+        - curl -fsSL https://raw.githubusercontent.com/ProxiBlue/booking_agent/main/etc/php.d/assert_off.ini -o /etc/php.d/assert_off.ini
+        - curl -fsSL https://raw.githubusercontent.com/ProxiBlue/booking_agent/main/etc/php.d/custom_io.ini -o /etc/php.d/custom_io.ini
+        - curl -fsSL https://raw.githubusercontent.com/ProxiBlue/booking_agent/main/etc/php.d/error_level.ini -o /etc/php.d/error_level.ini
+        - curl -fsSL https://raw.githubusercontent.com/ProxiBlue/booking_agent/main/etc/php-fpm.conf -o /etc/php-fpm.conf
         - mkdir -p /etc/systemd/system/redis.service.d/
-        - curl -fsSL https://raw.githubusercontent.com/ProxiBlue/HostingEnvironment/main/etc/systemd/system/redis.service.d/restart.conf -o /etc/systemd/system/redis.service.d/restart.conf
+        - curl -fsSL https://raw.githubusercontent.com/ProxiBlue/booking_agent/main/etc/systemd/system/redis.service.d/restart.conf -o /etc/systemd/system/redis.service.d/restart.conf
         - systemctl daemon-reload &>> /var/log/run.log
         - systemctl enable monit &>> /var/log/run.log
         - systemctl start monit &>> /var/log/run.log
-        - curl -fsSL https://raw.githubusercontent.com/ProxiBlue/HostingEnvironment/main/usr/local/bin/check-redis-queue.sh -o /usr/local/bin/check-redis-queue.sh
+        - curl -fsSL https://raw.githubusercontent.com/ProxiBlue/booking_agent/main/usr/local/bin/check-redis-queue.sh -o /usr/local/bin/check-redis-queue.sh
         - chmod +x /usr/local/bin/check-redis-queue.sh
       user: root
       sayYes: true
@@ -115,4 +112,4 @@ success:
 
         * admin / ${globals.MONIT_PASS}
 
-    * queue worker is managed by monit and runs as a cron
+    * queue worker is managed by monit
