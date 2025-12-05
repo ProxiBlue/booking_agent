@@ -1,0 +1,65 @@
+# /etc/monit/conf.d/ai-assistant-worker
+
+###############################################################################
+# Message Queue Worker Process Monitoring
+###############################################################################
+
+check process ai-assistant-worker
+    matching "worker.php"
+    start program = "/bin/systemctl start message-queue-worker"
+    stop program = "/bin/systemctl stop message-queue-worker"
+
+    # Restart if process doesn't exist
+    if does not exist then restart
+
+    # Restart if using too much memory (adjust as needed)
+    if memory > 512 MB for 3 cycles then restart
+
+    # Restart if using too much CPU (adjust as needed)
+    if cpu > 80% for 5 cycles then restart
+
+    # Alert if worker keeps restarting (possible crash loop)
+    if 5 restarts within 5 cycles then alert
+
+    # Check every 30 seconds (uses global setting)
+
+    # Dependencies: restart if Redis is restarted
+    depends on redis-server
+
+    group workers
+
+
+###############################################################################
+# Redis Server Monitoring
+###############################################################################
+
+check process redis-server
+    with pidfile /var/run/redis/redis-server.pid
+    start program = "/bin/systemctl start redis-server"
+    stop program = "/bin/systemctl stop redis-server"
+
+    # Restart if process doesn't exist
+    if does not exist then restart
+
+    # Check if Redis is responding
+    if failed host 127.0.0.1 port 6379 protocol redis then restart
+
+    # Memory monitoring
+    if memory > 1 GB then alert
+    if memory > 2 GB then restart
+
+    # Alert if Redis keeps restarting
+    if 3 restarts within 5 cycles then alert
+
+    group services
+
+
+###############################################################################
+# Redis Queue Length Monitoring
+###############################################################################
+
+check program redis-queue-length
+    with path "/usr/local/bin/check-redis-queue.sh"
+    every 5 cycles  # Check every 2.5 minutes (5 * 30 seconds)
+    if status > 0 then alert
+    group monitoring

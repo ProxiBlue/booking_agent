@@ -1,2 +1,7 @@
-Default project is accessible by [http://${env.domain}/laravel/public](http://${env.domain}/laravel/public).
-Follow our [blog post](https://jelastic.com/blog/lavarel-framework-automatic-installation-develop-php-applications/) to create your first Laravel-based web project.
+Webhooks base instalation done.
+
+PHP ${env.phpVersion}
+root: ${globals.NGINX_PASS}
+WEBHOOKS_URL: ${globals.WEBHOOKS_URL}
+monit: admin / ${globals.MONIT_PASS} port 2812
+

@@ -3,7 +3,7 @@ appVersion: latest
 type: install
 id: pb_booking_agent
 name: BookingAgent
-baseUrl: https://raw.githubusercontent.com/jelastic-jps/laravel/master
+baseUrl: https://raw.githubusercontent.com/ProxiBlue/booking_agent
 logo: /images/logo-transparent.png
 homepage: http://www.proxiblue.com.au/
 
@@ -59,10 +59,41 @@ actions:
         mv composer.phar /usr/bin/composer
         chmod +x /usr/bin/composer
         cd ${globals.webroot}
+        yum install epel-release &>> /var/log/run.log
+        yum update
+        yum install -y joe pv monit libsodium httpd-tools &>> /var/log/run.log
       user: root
+      sayYes: true
     install:
       cmd[cp]:
+        - htpasswd -b -c /etc/nginx/.htpasswd stats ${globals.STATS_PASS}
+        - chown nginx:nginx /etc/nginx/.htpasswd
+        - sed -i -e "/use address localhost/d" /etc/monitrc
+        - sed -i -e "/allow localhost/d" /etc/monitrc
+        - sed -i -e "s/allow admin:monit/allow admin:${globals.MONIT_PASS}/g" /etc/monitrc
         - export REDIS_ENABLED=TRUE
-        - curl https://raw.githubusercontent.com/ProxiBlue/HostingEnvironment/main/configs/redis/redis.conf > /etc/redis.conf
-
+        - curl etc/redis.conf > /etc/redis.conf
+        - systemctl start redis &>> /var/log/run.log
+        - systemctl enable redis &>> /var/log/run.log
+        - systemctl restart nginx &>> /var/log/run.log
+        - jem service restart  &>> /var/log/run.log
+        - mkdir -p /etc/monit.d/
+        - curl https://raw.githubusercontent.com/ProxiBlue/HostingEnvironment/main/etc/monit/nginx > /etc/monit.d/nginx
+        - curl https://raw.githubusercontent.com/ProxiBlue/HostingEnvironment/main/etc/monit/nginx > /etc/monit.d/nginx
+        - curl https://raw.githubusercontent.com/ProxiBlue/HostingEnvironment/main/etc/monit/booking_agent > /etc/monit.d/booking_agent
+        - curl https://raw.githubusercontent.com/ProxiBlue/HostingEnvironment/main/etc/php.d/assert_off.ini > /etc/php.d/assert_off.ini
+        - curl https://raw.githubusercontent.com/ProxiBlue/HostingEnvironment/main/etc/php.d/custom_io.ini > /etc/php.d/custom_io.ini
+        - curl https://raw.githubusercontent.com/ProxiBlue/HostingEnvironment/main/etc/php.d/error_level.ini > /etc/php.d/error_level.ini
+        - curl https://raw.githubusercontent.com/ProxiBlue/HostingEnvironment/main/etc/php.d/assert_off.ini > /etc/php.d/assert_off.ini
+        - curl https://raw.githubusercontent.com/ProxiBlue/HostingEnvironment/main/etc/php-fpm.conf > /etc/php-fpm.conf
+        - curl https://raw.githubusercontent.com/ProxiBlue/HostingEnvironment/main/configs/nginx/CORS-CDN/cors.conf > /etc/nginx/conf.d/CORS/cors.conf
+        - curl https://raw.githubusercontent.com/ProxiBlue/HostingEnvironment/main/configs/nginx/stub_status.conf > /etc/nginx/conf.d/stub_status.conf
+        - curl https://raw.githubusercontent.com/ProxiBlue/HostingEnvironment/main/etc/systemd/system/redis.service.d/restart.conf > /etc/systemd/system/redis.service.d/restart.conf
+        - systemctl enable monit &>> /var/log/run.log
+        - systemctl start monit &>> /var/log/run.log
+        - systemctl daemon-reload &>> /var/log/run.log
+        - curl https://raw.githubusercontent.com/ProxiBlue/HostingEnvironment/main//usr/local/bin/check-redis-queue.sh > /usr/local/bin/check-redis-queue.sh
+        - chmod +x /usr/local/bin/check-redis-queue.sh
+      user: root
+      sayYes: true
 success: /texts/success.md
