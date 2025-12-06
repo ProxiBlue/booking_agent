@@ -41,7 +41,6 @@ onInstall:
     - SetupAccess
     - config
     - install
-    - setupFirewall
     - restartNodes:
         - nodeGroup: [cp]
 
@@ -81,6 +80,7 @@ actions:
         - systemctl restart nginx &>> /var/log/run.log
         - jem service restart  &>> /var/log/run.log
         - mkdir -p /etc/monit.d/
+        - rm -f /etc/monit.d/* &>> /var/log/run.log
         - curl -fsSL https://raw.githubusercontent.com/ProxiBlue/booking_agent/main/etc/monit.d/nginx -o /etc/monit.d/nginx
         - curl -fsSL https://raw.githubusercontent.com/ProxiBlue/booking_agent/main/etc/monit.d/phpfpm -o /etc/monit.d/phpfpm
         - curl -fsSL https://raw.githubusercontent.com/ProxiBlue/booking_agent/main/etc/monit.d/booking_queue -o /etc/monit.d/booking_queue
@@ -95,34 +95,40 @@ actions:
         - systemctl start monit &>> /var/log/run.log
         - curl -fsSL https://raw.githubusercontent.com/ProxiBlue/booking_agent/main/usr/local/bin/check-redis-queue.sh -o /usr/local/bin/check-redis-queue.sh
         - chmod +x /usr/local/bin/check-redis-queue.sh
-        - echo "include /etc/monit.d/*" >> /etc/monitrc
+        - curl -fsSL https://raw.githubusercontent.com/ProxiBlue/booking_agent/main/usr/local/bin/worker.php -o /usr/local/bin/worker.php
+        - chmod +x /usr/local/bin/worker.php
+        - grep -qxF 'include /etc/monit.d/*' /etc/monitrc || echo "include /etc/monit.d/*" >> /etc/monitrc
         - monit reload &>> /var/log/run.log
       user: root
       sayYes: true
     setupFirewall:
       - api: env.security.AddRule
-        rules:
-          - direction: INPUT
-            name: Monit Access
-            protocol: TCP
-            ports: 2812
-            src: 180.150.92.24/32
-            priority: 1100
-            action: ALLOW
-          - direction: INPUT
-            name: Block FTP
-            protocol: TCP
-            ports: 20,21
-            src: 0.0.0.0/0
-            priority: 1200
-            action: DENY
-          - direction: INPUT
-            name: Block SMTP
-            protocol: TCP
-            ports: 25
-            src: 0.0.0.0/0
-            priority: 1200
-            action: DENY
+        rule:
+          direction: INPUT
+          name: Monit Access
+          protocol: TCP
+          ports: 2812
+          src: 180.150.92.24/32
+          priority: 1100
+          action: ALLOW
+      - api: env.security.AddRule
+        rule:
+          direction: INPUT
+          name: Block FTP
+          protocol: TCP
+          ports: 20,21
+          src: 0.0.0.0/0
+          priority: 1200
+          action: DENY
+      - api: env.security.AddRule
+        rule:
+          direction: INPUT
+          name: Block SMTP
+          protocol: TCP
+          ports: 25
+          src: 0.0.0.0/0
+          priority: 1200
+          action: DENY
 success:
   text: |
 
@@ -131,7 +137,7 @@ success:
     * **Host**: ${nodes.cp.first.intIP} or just use: localhost on AppServer
     * **socket**: It is preferred to use the socket /tmp/redis.sock
 
-    ## AppServer Node / DB Node
+    ## AppServer Node
 
     * **password**: ${globals.NGINX_PASS}
 
@@ -140,3 +146,4 @@ success:
         * admin / ${globals.MONIT_PASS}
 
     * queue worker is managed by monit
+    * open the monit port!
