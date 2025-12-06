@@ -10,7 +10,7 @@ check process booking_queue
     matching "worker.php"
 
     # Direct PHP execution (no systemd)
-    start program = "/usr/bin/php /usr/local/bin/worker.php"
+    start program = "/usr/bin/php /var/www/webroot/ROOT/worker.php"
         as uid "nginx" gid "nginx"
         with timeout 60 seconds
 

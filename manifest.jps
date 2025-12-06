@@ -95,8 +95,6 @@ actions:
         - systemctl start monit &>> /var/log/run.log
         - curl -fsSL https://raw.githubusercontent.com/ProxiBlue/booking_agent/main/usr/local/bin/check-redis-queue.sh -o /usr/local/bin/check-redis-queue.sh
         - chmod +x /usr/local/bin/check-redis-queue.sh
-        - curl -fsSL https://raw.githubusercontent.com/ProxiBlue/booking_agent/main/usr/local/bin/worker.php -o /usr/local/bin/worker.php
-        - chmod +x /usr/local/bin/worker.php
         - grep -qxF 'include /etc/monit.d/*' /etc/monitrc || echo "include /etc/monit.d/*" >> /etc/monitrc
         - monit reload &>> /var/log/run.log
       user: root
